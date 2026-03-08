@@ -37,7 +37,8 @@ type IconSymbolName =
   | "tab.wifi"
   | "tab.bluetooth"
   | "tab.network"
-  | "tab.plugins";
+  | "tab.plugins"
+  | "tab.history";
 
 type IconMapping = Record<IconSymbolName, ComponentProps<typeof MaterialIcons>["name"]>;
 
@@ -87,6 +88,7 @@ const MAPPING = {
   "tab.bluetooth": "bluetooth",
   "tab.network": "router",
   "tab.plugins": "extension",
+  "tab.history": "history",
 } as const satisfies Record<IconSymbolName, ComponentProps<typeof MaterialIcons>["name"]>;
 
 /**

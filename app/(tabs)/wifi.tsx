@@ -3,60 +3,43 @@ import { ScreenContainer } from "@/components/screen-container";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
+import { nativeWiFiService, type NativeWiFiNetwork } from "@/lib/native-wifi-service";
 import { useState } from "react";
-
-interface WiFiNetwork {
-  id: string;
-  ssid: string;
-  signal: number;
-  security: "WPA3" | "WPA2" | "Open";
-  channel: number;
-  frequency: string;
-}
 
 export default function WiFiScannerScreen() {
   const colors = useColors();
   const [isScanning, setIsScanning] = useState(false);
-  const [networks, setNetworks] = useState<WiFiNetwork[]>([
-    {
-      id: "1",
-      ssid: "HomeNetwork",
-      signal: -45,
-      security: "WPA3",
-      channel: 6,
-      frequency: "2.4 GHz",
-    },
-    {
-      id: "2",
-      ssid: "GuestWiFi",
-      signal: -65,
-      security: "WPA2",
-      channel: 11,
-      frequency: "2.4 GHz",
-    },
-    {
-      id: "3",
-      ssid: "OpenNetwork",
-      signal: -75,
-      security: "Open",
-      channel: 1,
-      frequency: "2.4 GHz",
-    },
-  ]);
+  const [networks, setNetworks] = useState<NativeWiFiNetwork[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleScan = () => {
+  const handleScan = async () => {
     setIsScanning(true);
-    setTimeout(() => {
+    setError(null);
+    try {
+      const scannedNetworks = await nativeWiFiService.scanWiFiNetworks();
+      setNetworks(scannedNetworks);
+    } catch (err) {
+      setError("Error scanning WiFi networks");
+      console.error(err);
+    } finally {
       setIsScanning(false);
-    }, 2000);
+    }
   };
 
-  const getSecurityBadgeVariant = (security: string) => {
-    if (security === "Open") return "vulnerable";
-    if (security === "WPA2") return "warning";
-    return "secure";
+  const getSecurityBadgeVariant = (capabilities: string) => {
+    if (capabilities.includes("WPA3")) return "secure";
+    if (capabilities.includes("WPA2")) return "warning";
+    return "vulnerable";
+  };
+
+  const getSecurityLabel = (capabilities: string) => {
+    if (capabilities.includes("WPA3")) return "WPA3";
+    if (capabilities.includes("WPA2")) return "WPA2";
+    if (capabilities.includes("WEP")) return "WEP";
+    return "Open";
   };
 
   const getSignalStrength = (signal: number) => {
@@ -64,6 +47,14 @@ export default function WiFiScannerScreen() {
     if (signal > -60) return "Good";
     if (signal > -70) return "Fair";
     return "Weak";
+  };
+
+  const getChannelFromFrequency = (frequency: number) => {
+    // Convertir frecuencia MHz a canal WiFi
+    if (frequency >= 2412 && frequency <= 2472) {
+      return Math.round((frequency - 2407) / 5);
+    }
+    return Math.round((frequency - 5000) / 5);
   };
 
   return (
@@ -89,14 +80,25 @@ export default function WiFiScannerScreen() {
             className="w-full"
           >
             <View className="flex-row items-center gap-2">
-              <IconSymbol
-                name={isScanning ? "stop.fill" : "play.fill"}
-                size={20}
-                color={colors.background}
-              />
-              <Text className="text-lg font-bold text-background">
-                {isScanning ? "Scanning..." : "Scan Networks"}
-              </Text>
+              {isScanning ? (
+                <>
+                  <Spinner size={20} color={colors.background} />
+                  <Text className="text-lg font-bold text-background">
+                    Scanning...
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <IconSymbol
+                    name="play.fill"
+                    size={20}
+                    color={colors.background}
+                  />
+                  <Text className="text-lg font-bold text-background">
+                    Scan Networks
+                  </Text>
+                </>
+              )}
             </View>
           </Button>
 
@@ -116,6 +118,13 @@ export default function WiFiScannerScreen() {
             </Card>
           )}
 
+          {/* Error Message */}
+          {error && (
+            <Card className="bg-error/10 border border-error">
+              <Text className="text-sm text-error">{error}</Text>
+            </Card>
+          )}
+
           {/* Networks List */}
           <View className="gap-3">
             <View className="flex-row items-center justify-between">
@@ -124,56 +133,69 @@ export default function WiFiScannerScreen() {
               </Text>
             </View>
 
-            <FlatList
-              scrollEnabled={false}
-              data={networks}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => {
-                    // Navigate to WiFi analysis
-                  }}
-                  className="mb-3"
-                >
-                  <Card className="active:opacity-70">
-                    <CardHeader>
-                      <View className="flex-row items-center justify-between gap-2">
-                        <View className="flex-1">
-                          <Text className="text-sm font-semibold text-foreground">
-                            {item.ssid}
+            {networks.length === 0 && !isScanning ? (
+              <Card>
+                <Text className="text-sm text-muted text-center">
+                  No networks found. Tap "Scan Networks" to start scanning.
+                </Text>
+              </Card>
+            ) : (
+              <FlatList
+                scrollEnabled={false}
+                data={networks}
+                keyExtractor={(item) => item.BSSID}
+                renderItem={({ item }) => (
+                  <Pressable
+                    onPress={() => {
+                      // Navigate to WiFi analysis
+                    }}
+                    className="mb-3"
+                  >
+                    <Card className="active:opacity-70">
+                      <CardHeader>
+                        <View className="flex-row items-center justify-between gap-2">
+                          <View className="flex-1">
+                            <Text className="text-sm font-semibold text-foreground">
+                              {item.SSID || "Hidden Network"}
+                            </Text>
+                          </View>
+                          <Badge variant={getSecurityBadgeVariant(item.capabilities) as any}>
+                            {getSecurityLabel(item.capabilities)}
+                          </Badge>
+                        </View>
+                      </CardHeader>
+                      <CardContent className="gap-2">
+                        <View className="flex-row items-center justify-between">
+                          <View className="flex-row items-center gap-2">
+                            <IconSymbol
+                              name="signal.medium"
+                              size={16}
+                              color={colors.muted}
+                            />
+                            <Text className="text-xs text-muted">
+                              {getSignalStrength(item.level)}
+                            </Text>
+                          </View>
+                          <Text className="text-xs font-mono text-foreground">
+                            {item.level} dBm
                           </Text>
                         </View>
-                        <Badge variant={getSecurityBadgeVariant(item.security)}>
-                          {item.security}
-                        </Badge>
-                      </View>
-                    </CardHeader>
-                    <CardContent className="gap-2">
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-row items-center gap-2">
-                          <IconSymbol
-                            name="signal.medium"
-                            size={16}
-                            color={colors.muted}
-                          />
+                        <View className="flex-row items-center justify-between">
+                          <Text className="text-xs text-muted font-mono">
+                            {item.BSSID}
+                          </Text>
+                        </View>
+                        <View className="flex-row items-center justify-between">
                           <Text className="text-xs text-muted">
-                            {getSignalStrength(item.signal)}
+                            Channel {getChannelFromFrequency(item.frequency)} • {item.frequency} MHz
                           </Text>
                         </View>
-                        <Text className="text-xs font-mono text-foreground">
-                          {item.signal} dBm
-                        </Text>
-                      </View>
-                      <View className="flex-row items-center justify-between">
-                        <Text className="text-xs text-muted">
-                          Channel {item.channel} • {item.frequency}
-                        </Text>
-                      </View>
-                    </CardContent>
-                  </Card>
-                </Pressable>
-              )}
-            />
+                      </CardContent>
+                    </Card>
+                  </Pressable>
+                )}
+              />
+            )}
           </View>
 
           {/* Info Card */}

@@ -3,63 +3,44 @@ import { ScreenContainer } from "@/components/screen-container";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
+import { nativeBluetoothService, type NativeBluetoothDevice } from "@/lib/native-bluetooth-service";
 import { useState } from "react";
-
-interface BluetoothDevice {
-  id: string;
-  name: string;
-  mac: string;
-  type: "phone" | "laptop" | "smartwatch" | "unknown";
-  signal: number;
-}
 
 export default function BluetoothScannerScreen() {
   const colors = useColors();
   const [isScanning, setIsScanning] = useState(false);
-  const [devices, setDevices] = useState<BluetoothDevice[]>([
-    {
-      id: "1",
-      name: "iPhone 15",
-      mac: "AA:BB:CC:DD:EE:FF",
-      type: "phone",
-      signal: -35,
-    },
-    {
-      id: "2",
-      name: "MacBook Pro",
-      mac: "11:22:33:44:55:66",
-      type: "laptop",
-      signal: -55,
-    },
-    {
-      id: "3",
-      name: "Apple Watch",
-      mac: "77:88:99:AA:BB:CC",
-      type: "smartwatch",
-      signal: -45,
-    },
-  ]);
+  const [devices, setDevices] = useState<NativeBluetoothDevice[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleScan = () => {
+  const handleScan = async () => {
     setIsScanning(true);
-    setTimeout(() => {
+    setError(null);
+    try {
+      const scannedDevices = await nativeBluetoothService.scanBluetoothDevices();
+      setDevices(scannedDevices);
+    } catch (err) {
+      setError("Error scanning Bluetooth devices");
+      console.error(err);
+    } finally {
       setIsScanning(false);
-    }, 2000);
+    }
   };
 
-  const getDeviceIcon = (type: string) => {
-    switch (type) {
-      case "phone":
-        return "iphone";
-      case "laptop":
-        return "laptopcomputer";
-      case "smartwatch":
-        return "applewatch";
-      default:
-        return "questionmark.circle";
+  const getDeviceIcon = (name: string) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes("iphone") || lowerName.includes("android")) {
+      return "iphone";
     }
+    if (lowerName.includes("macbook") || lowerName.includes("windows")) {
+      return "laptopcomputer";
+    }
+    if (lowerName.includes("watch")) {
+      return "applewatch";
+    }
+    return "questionmark.circle";
   };
 
   const getSignalStrength = (signal: number) => {
@@ -94,14 +75,25 @@ export default function BluetoothScannerScreen() {
             className="w-full"
           >
             <View className="flex-row items-center gap-2">
-              <IconSymbol
-                name={isScanning ? "stop.fill" : "play.fill"}
-                size={20}
-                color={colors.background}
-              />
-              <Text className="text-lg font-bold text-background">
-                {isScanning ? "Scanning..." : "Scan Devices"}
-              </Text>
+              {isScanning ? (
+                <>
+                  <Spinner size={20} color={colors.background} />
+                  <Text className="text-lg font-bold text-background">
+                    Scanning...
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <IconSymbol
+                    name="play.fill"
+                    size={20}
+                    color={colors.background}
+                  />
+                  <Text className="text-lg font-bold text-background">
+                    Scan Devices
+                  </Text>
+                </>
+              )}
             </View>
           </Button>
 
@@ -123,6 +115,13 @@ export default function BluetoothScannerScreen() {
             </Card>
           )}
 
+          {/* Error Message */}
+          {error && (
+            <Card className="bg-error/10 border border-error">
+              <Text className="text-sm text-error">{error}</Text>
+            </Card>
+          )}
+
           {/* Devices List */}
           <View className="gap-3">
             <View className="flex-row items-center justify-between">
@@ -131,58 +130,82 @@ export default function BluetoothScannerScreen() {
               </Text>
             </View>
 
-            <FlatList
-              scrollEnabled={false}
-              data={devices}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => {
-                    // Navigate to device analysis
-                  }}
-                  className="mb-3"
-                >
-                  <Card className="active:opacity-70">
-                    <CardHeader>
-                      <View className="flex-row items-center gap-3">
-                        <View className="w-10 h-10 bg-accent/20 rounded-lg items-center justify-center">
-                          <IconSymbol
-                            name={getDeviceIcon(item.type) as any}
-                            size={20}
-                            color={colors.accent}
-                          />
+            {devices.length === 0 && !isScanning ? (
+              <Card>
+                <Text className="text-sm text-muted text-center">
+                  No devices found. Tap "Scan Devices" to start scanning.
+                </Text>
+              </Card>
+            ) : (
+              <FlatList
+                scrollEnabled={false}
+                data={devices}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <Pressable
+                    onPress={() => {
+                      // Navigate to device analysis
+                    }}
+                    className="mb-3"
+                  >
+                    <Card className="active:opacity-70">
+                      <CardHeader>
+                        <View className="flex-row items-center gap-3">
+                          <View className="w-10 h-10 bg-accent/20 rounded-lg items-center justify-center">
+                            <IconSymbol
+                              name={getDeviceIcon(item.name) as any}
+                              size={20}
+                              color={colors.accent}
+                            />
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-sm font-semibold text-foreground">
+                              {item.name}
+                            </Text>
+                            <Text className="text-xs text-muted font-mono">
+                              {item.id}
+                            </Text>
+                          </View>
                         </View>
-                        <View className="flex-1">
-                          <Text className="text-sm font-semibold text-foreground">
-                            {item.name}
-                          </Text>
-                          <Text className="text-xs text-muted font-mono">
-                            {item.mac}
-                          </Text>
-                        </View>
-                      </View>
-                    </CardHeader>
-                    <CardContent className="gap-2">
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-row items-center gap-2">
-                          <IconSymbol
-                            name="signal.medium"
-                            size={16}
-                            color={colors.muted}
-                          />
-                          <Text className="text-xs text-muted">
-                            {getSignalStrength(item.signal)}
+                      </CardHeader>
+                      <CardContent className="gap-2">
+                        <View className="flex-row items-center justify-between">
+                          <View className="flex-row items-center gap-2">
+                            <IconSymbol
+                              name="signal.medium"
+                              size={16}
+                              color={colors.muted}
+                            />
+                            <Text className="text-xs text-muted">
+                              {getSignalStrength(item.rssi)}
+                            </Text>
+                          </View>
+                          <Text className="text-xs font-mono text-foreground">
+                            {item.rssi} dBm
                           </Text>
                         </View>
-                        <Text className="text-xs font-mono text-foreground">
-                          {item.signal} dBm
-                        </Text>
-                      </View>
-                    </CardContent>
-                  </Card>
-                </Pressable>
-              )}
-            />
+                        {item.isConnectable !== undefined && (
+                          <View className="flex-row items-center gap-2">
+                            <View
+                              className={`w-2 h-2 rounded-full ${
+                                item.isConnectable
+                                  ? "bg-highlight"
+                                  : "bg-muted"
+                              }`}
+                            />
+                            <Text className="text-xs text-muted">
+                              {item.isConnectable
+                                ? "Connectable"
+                                : "Not Connectable"}
+                            </Text>
+                          </View>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Pressable>
+                )}
+              />
+            )}
           </View>
 
           {/* Info Card */}
