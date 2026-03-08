@@ -1,14 +1,31 @@
 /** @type {const} */
 const themeColors = {
-  primary: { light: '#0a7ea4', dark: '#0a7ea4' },
-  background: { light: '#ffffff', dark: '#151718' },
-  surface: { light: '#f5f5f5', dark: '#1e2022' },
-  foreground: { light: '#11181C', dark: '#ECEDEE' },
-  muted: { light: '#687076', dark: '#9BA1A6' },
+  // Primary colors - Cyan tech
+  primary: { light: '#0066FF', dark: '#00E5FF' },
+  // Background
+  background: { light: '#F5F7FA', dark: '#0B0F14' },
+  // Surface/Cards
+  surface: { light: '#FFFFFF', dark: '#121821' },
+  // Secondary panels
+  secondary: { light: '#E9EEF5', dark: '#1A2330' },
+  // Foreground text
+  foreground: { light: '#111827', dark: '#E6EDF3' },
+  // Muted/secondary text
+  muted: { light: '#6B7280', dark: '#8B949E' },
+  // Border color
   border: { light: '#E5E7EB', dark: '#334155' },
-  success: { light: '#22C55E', dark: '#4ADE80' },
-  warning: { light: '#F59E0B', dark: '#FBBF24' },
-  error: { light: '#EF4444', dark: '#F87171' },
+  // Accent secondary - Violet
+  accent: { light: '#6C3BFF', dark: '#7C4DFF' },
+  // Highlight - Green cyber
+  highlight: { light: '#00C896', dark: '#00FFA3' },
+  // Success
+  success: { light: '#00C896', dark: '#00FFA3' },
+  // Warning
+  warning: { light: '#F59E0B', dark: '#FFB020' },
+  // Error
+  error: { light: '#EF4444', dark: '#FF4D4D' },
+  // Tint (alias for primary)
+  tint: { light: '#0066FF', dark: '#00E5FF' },
 };
 
 module.exports = { themeColors };

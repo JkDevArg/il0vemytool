@@ -32,7 +32,45 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="tab.home" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="wifi"
+        options={{
+          title: "WiFi",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="tab.wifi" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="bluetooth"
+        options={{
+          title: "Bluetooth",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="tab.bluetooth" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="audit"
+        options={{
+          title: "Audit",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="tab.network" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="plugins"
+        options={{
+          title: "Plugins",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="tab.plugins" color={color} />
+          ),
         }}
       />
     </Tabs>

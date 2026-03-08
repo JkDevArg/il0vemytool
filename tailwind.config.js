@@ -22,12 +22,25 @@ module.exports = {
   theme: {
     extend: {
       colors: tailwindColors,
+      spacing: {
+        "safe-bottom": "env(safe-area-inset-bottom)",
+      },
     },
   },
   plugins: [
-    plugin(({ addVariant }) => {
+    plugin(({ addVariant, matchUtilities }) => {
       addVariant("light", ':root:not([data-theme="dark"]) &');
       addVariant("dark", ':root[data-theme="dark"] &');
+
+      // Add custom utilities for tech aesthetic
+      matchUtilities(
+        {
+          glow: (value) => ({
+            boxShadow: `0 0 20px ${value}`,
+          }),
+        },
+        { values: { cyan: "#00E5FF", violet: "#7C4DFF", green: "#00FFA3" } }
+      );
     }),
   ],
 };
