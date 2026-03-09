@@ -1,9 +1,7 @@
 import { Platform } from "react-native";
-import * as Permissions from "expo-permissions";
-
 /**
- * Native Bluetooth Service - Acceso real a dispositivos Bluetooth
- * Utiliza react-native-ble-plx para escaneo y conexión
+ * Native Bluetooth Service - Escaneo simulado de dispositivos Bluetooth
+ * Nota: Para acceso real a Bluetooth, requiere módulos nativos adicionales
  */
 
 export interface NativeBluetoothDevice {
@@ -18,29 +16,7 @@ export interface NativeBluetoothDevice {
 class NativeBluetoothService {
   private isScanning = false;
 
-  /**
-   * Solicita permisos necesarios para Bluetooth
-   */
-  async requestPermissions(): Promise<boolean> {
-    try {
-      if (Platform.OS === "android") {
-        const { status: locationStatus } = await Permissions.askAsync(
-          Permissions.LOCATION
-        );
-        return locationStatus === "granted";
-      } else if (Platform.OS === "ios") {
-        // iOS requiere permisos de ubicación para Bluetooth
-        const { status } = await Permissions.askAsync(
-          Permissions.LOCATION
-        );
-        return status === "granted";
-      }
-      return true;
-    } catch (error) {
-      console.error("Error requesting Bluetooth permissions:", error);
-      return false;
-    }
-  }
+
 
   /**
    * Escanea dispositivos Bluetooth disponibles
@@ -51,12 +27,7 @@ class NativeBluetoothService {
     duration: number = 10000
   ): Promise<NativeBluetoothDevice[]> {
     try {
-      // Verificar permisos
-      const hasPermission = await this.requestPermissions();
-      if (!hasPermission) {
-        console.warn("Bluetooth permissions not granted");
-        return [];
-      }
+      // Permisos manejados automáticamente en app.config.ts
 
       this.isScanning = true;
 

@@ -1,10 +1,9 @@
-import { Platform } from "react-native";
-import * as Permissions from "expo-permissions";
-
 /**
- * Native WiFi Service - Acceso real a redes WiFi
- * Utiliza react-native-wifi-reborn para escaneo y conexión
+ * Native WiFi Service - Escaneo simulado de redes WiFi
+ * Nota: Para acceso real a WiFi, requiere módulos nativos adicionales
  */
+
+
 
 export interface NativeWiFiNetwork {
   SSID: string;
@@ -16,29 +15,7 @@ export interface NativeWiFiNetwork {
 }
 
 class NativeWiFiService {
-  /**
-   * Solicita permisos necesarios para escaneo WiFi
-   */
-  async requestPermissions(): Promise<boolean> {
-    try {
-      if (Platform.OS === "android") {
-        const { status } = await Permissions.askAsync(
-          Permissions.LOCATION
-        );
-        return status === "granted";
-      } else if (Platform.OS === "ios") {
-        // iOS requiere permisos de ubicación para WiFi
-        const { status } = await Permissions.askAsync(
-          Permissions.LOCATION
-        );
-        return status === "granted";
-      }
-      return true;
-    } catch (error) {
-      console.error("Error requesting permissions:", error);
-      return false;
-    }
-  }
+
 
   /**
    * Escanea redes WiFi disponibles
@@ -47,12 +24,7 @@ class NativeWiFiService {
    */
   async scanWiFiNetworks(): Promise<NativeWiFiNetwork[]> {
     try {
-      // Verificar permisos
-      const hasPermission = await this.requestPermissions();
-      if (!hasPermission) {
-        console.warn("WiFi scan permissions not granted");
-        return [];
-      }
+      // Permisos manejados automáticamente en app.config.ts
 
       // En un dispositivo real, usaría:
       // const WifiManager = require("react-native-wifi-reborn");
